@@ -1,5 +1,5 @@
 import pandas as pd
-from playwright.sync_api import sync_playwright
+from patchright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import os
 
@@ -36,16 +36,24 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
         codes_list: a list of invoices codes
         
     returns: nothing'''
+    playwright_page.goto(dian_website)
+    payment_method_list = []
     for code in codes_list:
-        file_name = 'dia_invoice.pdf'
-        payment_method_list = []
-        playwright_page.goto(dian_website)
+        file_name = code + '.pdf'
+        print('Loggin in DIAN website')
         playwright_page.get_by_placeholder('Ingrese el código CUFE o UUID').fill(code)
+        # playwright_page.get_by_text('Success!').wait_for(state='visible')
         playwright_page.get_by_role('button', name='Buscar').click()
+        # playwright_page.get_by_text('Success!').wait_for(state='visible')
         with playwright_page.expect_download() as download_info:
-            playwright_page.get_by_role('link', name='Descargar PDF')
+            print('Downloading pdf')
+            playwright_page.get_by_role('link', name=' Descargar PDF ').click()
         downloaded_file = download_info.value
         downloaded_file.save_as('/Users/guestvil/Downloads' + file_name)
+        print('pdf downloaded')
+        playwright_page.get_by_role('link', name='Volver').click()
+        # TEMPORAL: este return se debe mover fuera del ciclo para que navegador no se cierre después de cada consulta de código
+        return None
 
 
 
@@ -55,9 +63,8 @@ def main():
     dian_url = load_env_files()
     invoice_list = load_invoice_codes(path)
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=False, downloads_path='/Users/guestvil/Downloads', slow_mo=1000)
-        dian_window = browser.new_context()
-        dian_page = dian_window.new_page()
+        browser = playwright.chromium.launch_persistent_context(user_data_dir='', channel='chrome', headless=False, downloads_path='/Users/guestvil/Downloads', no_viewport=True, slow_mo=1000)
+        dian_page = browser.new_page()
         get_dian_pdfs(codes_list=invoice_list, dian_website=dian_url, playwright_page=dian_page)
         
 
