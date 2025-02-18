@@ -1,6 +1,7 @@
 import pandas as pd
 from patchright.sync_api import sync_playwright
 from dotenv import load_dotenv
+import pymupdf
 import os
 
 
@@ -37,10 +38,13 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
         
     returns: nothing'''
     playwright_page.goto(dian_website)
-    payment_method_list = []
+    files_list = []
     for code in codes_list:
         file_name = code + '.pdf'
+        download_path = '/Users/guestvil/Downloads'
+        file_path = download_path + '/' + file_name
         print('Loggin in DIAN website')
+        playwright_page.wait_for_timeout(3000)
         playwright_page.get_by_placeholder('Ingrese el código CUFE o UUID').fill(code)
         # playwright_page.get_by_text('Success!').wait_for(state='visible')
         playwright_page.get_by_role('button', name='Buscar').click()
@@ -49,25 +53,42 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
             print('Downloading pdf')
             playwright_page.get_by_role('link', name=' Descargar PDF ').click()
         downloaded_file = download_info.value
-        downloaded_file.save_as('/Users/guestvil/Downloads' + file_name)
+        downloaded_file.save_as(file_path)
         print('pdf downloaded')
+        files_list.append(file_name)
         playwright_page.get_by_role('link', name='Volver').click()
-        # TEMPORAL: este return se debe mover fuera del ciclo para que navegador no se cierre después de cada consulta de código
-        return None
+    return files_list
 
 
+def get_payment_method(file_path_lists):
+    file_payment_method = []
+    for pdf_path in file_path_lists:
+        invoice_text = ''
+        with pymupdf.open(pdf_path) as pdf:
+            for page in pdf:
+                invoice_text += page.get_text('text')
+        invoice_text = invoice_text.split()
+        forma_pago = invoice_text[invoice_text.index('pago:') + 1]
+        invoice = pdf_path.split('.')[0]
+        file_payment_method.append((invoice, forma_pago))
+    print(file_payment_method)
+    return file_payment_method
 
 
 def main():
     path = '1_enero.xlsx'
     dian_url = load_env_files()
     invoice_list = load_invoice_codes(path)
+    # This created relatives paths, I don't know why this works but providing absolute paths to the Downloads folder simply does not work
+    invoices_paths = [invoice + '.pdf' for invoice in invoice_list]
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch_persistent_context(user_data_dir='', channel='chrome', headless=False, downloads_path='/Users/guestvil/Downloads', no_viewport=True, slow_mo=1000)
         dian_page = browser.new_page()
-        get_dian_pdfs(codes_list=invoice_list, dian_website=dian_url, playwright_page=dian_page)
-        
-
+        pdfs_paths = get_dian_pdfs(codes_list=invoice_list[0:2], dian_website=dian_url, playwright_page=dian_page)
+        payment_tuple = get_payment_method(pdfs_paths)
+        for tuples in payment_tuple:
+            if tuples[0] not in invoice_list:
+                print(f'Faltó este código: {tuples}')
 
 
 if __name__ == '__main__':
