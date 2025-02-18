@@ -56,7 +56,7 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
         downloaded_file.save_as(file_path)
         print('pdf downloaded')
         # This appends relatives paths for the pdf reading function, I don't know why this works but providing absolute paths to the Downloads folder simply does not work
-        files_list.append(file_name)
+        files_list.append(download_path+ '/'+ file_name)
         playwright_page.get_by_role('link', name='Volver').click()
     return files_list
 
@@ -71,17 +71,21 @@ def get_payment_method(file_path_lists):
         invoice_text = invoice_text.split()
         forma_pago = invoice_text[invoice_text.index('pago:') + 1]
         invoice = pdf_path.split('.')[0]
+        invoice = invoice.split('/')[-1]
         file_payment_method.append((invoice, forma_pago))
     return file_payment_method
 
 
 def update_excel(file_path: str, invoices_tuples: list):
+    new_path = 'updated' + file_path
     df_excel = pd.read_excel(file_path, engine='openpyxl')
     indexing = 0
     df_excel['pago'] = None
     for row in df_excel.itertuples(index=True):
+        print(row[2])
         try: 
             if row[2] == invoices_tuples[indexing][0]:
+                print(invoices_tuples[indexing][0])
                 print(invoices_tuples[indexing][1])
                 df_excel.at[row.Index, 'pago'] = invoices_tuples[indexing][1]
                 indexing += 1
@@ -89,13 +93,15 @@ def update_excel(file_path: str, invoices_tuples: list):
                 continue
         except IndexError as e:
             print('Programa finalizado. Hay facturas del excel sin procesar')
-    df_excel.to_excel(file_path, index=False, engine='openpyxl')
+            break
+    df_excel.to_excel(new_path, index=False, engine='openpyxl')
     print('Changes saved to excel file!')
     return None
 
 
 def main():
     path = '1_enero.xlsx'
+    new_path = 'updated_file.xlsx'
     dian_url = load_env_files()
     invoice_list = load_invoice_codes(path)
     invoices_not_read = []
@@ -107,7 +113,7 @@ def main():
         for tuples in payment_tuple:
             if tuples[0] not in invoice_list:
                 invoices_not_read.append(tuples[0])
-    update_excel(file_path=path, invoices_tuples=payment_tuple)
+        update_excel(file_path=path, invoices_tuples=payment_tuple)
     print('Program successful')
 
 
