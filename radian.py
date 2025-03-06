@@ -41,6 +41,7 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
     returns: nothing'''
     playwright_page.goto(dian_website)
     files_list = []
+    failed_invoices = []
     for code in codes_list:
         file_name = code + '.pdf'
         download_path = '/Users/guestvil/Downloads'
@@ -53,10 +54,16 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
             try: 
                 playwright_page.get_by_placeholder('Ingrese el código CUFE o UUID').fill(code)
                 playwright_page.get_by_role('button', name='Buscar').click()
+                print('Se dio click en buscar')
                 if playwright_page.get_by_text('Falta Token de validación de captcha').is_visible():
                     playwright_page.wait_for_timeout(4000)
+                    print('Error, esperando validación de captcha')
                     playwright_page.get_by_role('button', name='Buscar').click()
+                    print('Se dio click de nuevo a buscar')
                 # playwright_page.get_by_text('Success!').wait_for(state='visible')
+                if playwright_page.get_by_text('Documento no encontrado en los registros de la DIAN.').is_visible():
+                    print('El documento no está en los registros de la DIAN')
+                    continue
                 with playwright_page.expect_download() as download_info:
                     print('Downloading pdf')
                     playwright_page.get_by_role('link', name=' Descargar PDF ').click()
@@ -75,7 +82,9 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
             playwright_page.get_by_role('link', name='Volver').click()
         else:
             print('No se pudo descargar: ', code)
+            failed_invoices.append(code)
             playwright_page.goto(dian_website)
+    print(f'No se pudieron descargar los siguientes cufes: {failed_invoices}')
     return files_list
 
 
@@ -87,10 +96,14 @@ def get_payment_method(file_path_lists):
             for page in pdf:
                 invoice_text += page.get_text('text')
         invoice_text = invoice_text.split()
-        forma_pago = invoice_text[invoice_text.index('pago:') + 1]
-        invoice = pdf_path.split('.')[0]
-        invoice = invoice.split('/')[-1]
-        file_payment_method.append((invoice, forma_pago))
+        try:
+            forma_pago = invoice_text[invoice_text.index('pago:') + 1]
+            invoice = pdf_path.split('.')[0]
+            invoice = invoice.split('/')[-1]
+            file_payment_method.append((invoice, forma_pago))
+        except ValueError as e:
+            print(e)
+            continue
     return file_payment_method
 
 
@@ -119,7 +132,7 @@ def update_excel(file_path: str, invoices_tuples: list):
 
 def main():
     print(datetime.now().time())
-    path = '1_enero.xlsx'
+    path = 'febrero_wplay.xlsx'
     new_path = 'updated_file.xlsx'
     dian_url = load_env_files()
     invoice_list = load_invoice_codes(path)
