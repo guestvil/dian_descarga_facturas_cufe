@@ -1,0 +1,1 @@
+Este código hace uso extensivo de Playwright y es la principal herramienta para entender el funcionamiento del mismo. La documentación puede ser [encontrada acá](https://playwright.dev/docs/intro) y un [vídeo tutorial](https://youtu.be/E4wU8y7r1Uc?si=-yDwFiAeFvM2m7WR) puede ser encontrado acá.
