@@ -174,20 +174,28 @@ def update_excel(file_path: str, invoices_tuples: list):
 
 def main():
     print(datetime.now().time())
-    path = 'febrero_wplay.xlsx'
+    # directorio en que se encuentra el archivo con los códigos CUFE
+    path = 'your_excel_file_here'
     new_path = 'updated_file.xlsx'
     dian_url = load_env_files()
     invoice_list = load_invoice_codes(path)
     invoices_not_read = []
+    # generamos una instancia de playwright
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch_persistent_context(user_data_dir='', channel='chrome', headless=False, downloads_path='/Users/guestvil/Downloads', no_viewport=True, slow_mo=1000)
+        # abrimos un navegador
+        browser = playwright.chromium.launch_persistent_context(user_data_dir='', channel='chrome', headless=False, downloads_path='your_downloads_path_here', no_viewport=True, slow_mo=1000)
+        # abrimos una nueva página
         dian_page = browser.new_page()
+        # descargamos las facturas y recibimos la lista con la ubicación de cada factura
         pdfs_paths = get_dian_pdfs(codes_list=invoice_list, dian_website=dian_url, playwright_page=dian_page)
+        # leemos los archivos y obtenemos el método de pago de cada CUFE
         payment_tuple = get_payment_method(pdfs_paths)
         for tuples in payment_tuple:
             if tuples[0] not in invoice_list:
                 invoices_not_read.append(tuples[0])
+        # el archivo excel es actualizado con la información de pago de cada factura
         update_excel(file_path=path, invoices_tuples=payment_tuple)
+    # se imprime la hora de terminación, usado durante pruebas para determinar tiempo de ejecución
     print('Program successful', datetime.now().time())
 
 
