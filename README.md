@@ -1,1 +1,10 @@
-Este código hace uso extensivo de [Patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright), que es una versión de Playwright que permite saltar el captcha de la DIAN. El funcionamiento de patchright es **exactamente igual al de Playwright,** es la principal herramienta para entender el funcionamiento del código. La documentación puede ser [encontrada acá](https://playwright.dev/docs/intro) y un [vídeo tutorial](https://youtu.be/E4wU8y7r1Uc?si=-yDwFiAeFvM2m7WR) también. 
+El script requiere un archivo de excel en cuya segunda columna estén los cufes de las facturas a descargar. El programa: 
+
+1. Descargará cada una de las facturas asociadas al respectivo CUFE. 
+2. Leerá las facturas y almacenará la forma de pago de cada una, ya sea crédito o contado. 
+3. Añadirá una nueva columna al excel llamada "pago", en que indicará si es crédito o contado. 
+4. Generará un nuevo archivo de excel con la información.  
+
+El archivo de excel se puede usar para la automatización de la aceptación de facturas en Siigo. 
+
+Vídeo del programa en ejecución acá. 
