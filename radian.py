@@ -5,6 +5,7 @@ import pymupdf
 from datetime import datetime
 from patchright._impl._errors import TimeoutError
 import os
+import json
 
 
 
@@ -85,10 +86,12 @@ def get_dian_pdfs(codes_list: list, dian_website: str, playwright_page):
             failed_invoices.append(code)
             playwright_page.goto(dian_website)
     print(f'No se pudieron descargar los siguientes cufes: {failed_invoices}')
+    with open('files_paths.json', 'w', encoding='utf-8') as json_file:
+        json.dump(files_list, json_file, indent=4)
     return files_list
 
 
-def get_payment_method(file_path_lists):
+def get_payment_method(file_path_lists):    
     file_payment_method = []
     for pdf_path in file_path_lists:
         invoice_text = ''
